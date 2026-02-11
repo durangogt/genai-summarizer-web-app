@@ -10,7 +10,7 @@
 It should be in one app
 
 The directory tree for the GenAIsummarizer App:
-
+```
 summarizer-app/
 ├── backend/
 │   ├── app/
@@ -38,7 +38,7 @@ summarizer-app/
 ├── run.py                         # CLI to start app (web server, batch jobs)
 └── .env                           # Environment variables (not in version control)
 └── startup.sh                     # Startup script for deployment
-
+```
 The files should be organized and created in the above provided directory structure.
 
 The use and function of each file is as follows:
