@@ -10,11 +10,10 @@ load_dotenv()
 class Config:
     """Application configuration loaded from environment variables."""
     
-    # Azure OpenAI Configuration
-    AZURE_OPENAI_API_KEY: str = os.getenv("AZURE_OPENAI_API_KEY", "")
-    AZURE_OPENAI_ENDPOINT: str = os.getenv("AZURE_OPENAI_ENDPOINT", "")
-    AZURE_OPENAI_DEPLOYMENT: str = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
-    AZURE_OPENAI_API_VERSION: str = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+    # GitHub Models Configuration
+    GITHUB_TOKEN: str = os.getenv("GITHUB_TOKEN", "")
+    GITHUB_MODELS_ENDPOINT: str = os.getenv("GITHUB_MODELS_ENDPOINT", "https://models.inference.ai.azure.com")
+    GITHUB_MODEL_NAME: str = os.getenv("GITHUB_MODEL_NAME", "gpt-4o")
     
     # JWT Authentication
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
@@ -45,10 +44,10 @@ class Config:
     @classmethod
     def validate(cls) -> bool:
         """Validate required configuration."""
-        if not cls.AZURE_OPENAI_API_KEY:
-            raise ValueError("AZURE_OPENAI_API_KEY environment variable is required")
-        if not cls.AZURE_OPENAI_ENDPOINT:
-            raise ValueError("AZURE_OPENAI_ENDPOINT environment variable is required")
+        if not cls.GITHUB_TOKEN:
+            raise ValueError("GITHUB_TOKEN environment variable is required")
+        if not cls.GITHUB_MODELS_ENDPOINT:
+            raise ValueError("GITHUB_MODELS_ENDPOINT environment variable is required")
         return True
 
 
