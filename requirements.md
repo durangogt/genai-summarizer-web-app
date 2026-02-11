@@ -21,7 +21,7 @@ The Non-Functional Requirements of this app is:
 - Minimal external dependencies, all listed in requirements.txt
 - Easy installation using pip and virtual environment
 - Responsive and accessible web UI (Python/Jinja2 templates, keyboard navigation, screen reader support)
-- Configured with Azure OpenAI model using environment variables for keys and endpoints
+- Configured with GitHub Models using environment variables for tokens and endpoints
 - Scalable for large document sets (horizontal scaling supported)
 - Documentation for setup, usage, and troubleshooting
 - Error messages are clear and actionable for users
@@ -33,7 +33,7 @@ Setup Checklist:
 2. Install dependencies from requirements.txt.
 3. Run the app using run.py.
 4. Access the web UI and REST API.
-5. When the app is successfully running, set environment variables for Azure OpenAI keys and endpoints.
+5. When the app is successfully running, set environment variables for GitHub Models tokens and endpoints.
 6. Access the web UI and REST API and test the features.
 7. Review documentation in README.md for usage and troubleshooting.
 

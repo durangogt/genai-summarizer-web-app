@@ -1,6 +1,6 @@
 # GenAI Summarizer Web App
 
-A self-hosted Python application that generates concise summaries from text documents, PDFs, DOCX files, and web URLs using Azure OpenAI.
+A self-hosted Python application that generates concise summaries from text documents, PDFs, DOCX files, and web URLs using GitHub Models.
 
 ## Overview
 
@@ -13,20 +13,20 @@ This application provides both a REST API and a simple web interface for documen
 - **REST API**: Integration-ready endpoints with JWT authentication
 - **Web UI**: Responsive interface with upload forms and summary history
 - **Batch Processing**: Process up to 10 files simultaneously
-- **Azure OpenAI Integration**: Powered by Azure OpenAI models
+- **GitHub Models Integration**: Powered by GitHub Models AI
 
 ## Quick Start
 
 1. Create and activate a Python virtual environment
 2. Install dependencies: `pip install -r requirements.txt`
-3. Configure environment variables for Azure OpenAI
+3. Configure environment variables for GitHub Models
 4. Run the application: `python run.py`
 5. Access the web UI at `http://127.0.0.1:8000`
 
 ## Requirements
 
 - Python 3.8+
-- Azure OpenAI API credentials
+- GitHub token with access to Models API
 - Maximum file size: 10MB per upload
 
 ## Lab Guide

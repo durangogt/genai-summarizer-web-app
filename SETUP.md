@@ -34,7 +34,7 @@ pip install -r requirements.txt
 
 ### 3. Configure Environment Variables
 
-Copy the `.env.template` file to `.env` and fill in your Azure OpenAI credentials:
+Copy the `.env.template` file to `.env` and fill in your GitHub Models credentials:
 
 ```powershell
 Copy-Item .env.template .env
@@ -43,9 +43,9 @@ Copy-Item .env.template .env
 Then edit `.env` and add your actual values:
 
 ```
-AZURE_OPENAI_API_KEY=your-actual-api-key
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+GITHUB_TOKEN=your-github-token-here
+GITHUB_MODELS_ENDPOINT=https://models.inference.ai.azure.com
+GITHUB_MODEL_NAME=gpt-4o
 ```
 
 ### 4. Run the Application
@@ -164,7 +164,7 @@ genai-summarizer-web-app/
 ## Next Steps
 
 1. **Complete dependency installation** (if interrupted)
-2. **Configure Azure OpenAI credentials** in `.env`
+2. **Configure GitHub Models credentials** in `.env`
 3. **Run the application** with `python run.py`
 4. **Test the features** through the web interface
 5. **Run the test suite** to verify everything works
@@ -182,7 +182,7 @@ If you see import errors, make sure:
 
 If you see configuration validation errors:
 1. Check that `.env` file exists (not `.env.template`)
-2. Verify Azure OpenAI credentials are correct
+2. Verify GitHub token is correct
 3. Ensure no extra spaces in environment variable values
 
 ### Port Already in Use
