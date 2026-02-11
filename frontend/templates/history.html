@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Summary History</h2>
+    <p>View your recent summarization history.</p>
+    
+    {% if count > 0 %}
+    <div class="info">
+        Showing {{ count }} most recent summaries
+    </div>
+    {% else %}
+    <div class="info">
+        No history available. Start by summarizing some content!
+    </div>
+    {% endif %}
+</div>
+
+{% if history %}
+{% for entry in history %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+        <div>
+            <h3>
+                {% if entry.type == 'file' %}
+                📄 {{ entry.source }}
+                {% elif entry.type == 'url' %}
+                🌐 URL
+                {% else %}
+                📝 Text Input
+                {% endif %}
+            </h3>
+            <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                <strong>Type:</strong> {{ entry.type | upper }}<br>
+                {% if entry.source and entry.type == 'url' %}
+                <strong>Source:</strong> <a href="{{ entry.source }}" target="_blank">{{ entry.source[:50] }}...</a><br>
+                {% endif %}
+                <strong>Length:</strong> {{ entry.length }}<br>
+                <strong>Date:</strong> {{ entry.timestamp.strftime('%Y-%m-%d %H:%M:%S') if entry.timestamp else 'N/A' }}
+            </div>
+        </div>
+        <div style="background-color: #3498db; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9em;">
+            #{{ entry.id }}
+        </div>
+    </div>
+    
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 4px solid #3498db;">
+        <strong>Summary:</strong>
+        <p style="margin-top: 10px; white-space: pre-wrap; line-height: 1.8;">{{ entry.summary }}</p>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="card">
+    <a href="/" class="btn">Back to Home</a>
+</div>
+{% endblock %}

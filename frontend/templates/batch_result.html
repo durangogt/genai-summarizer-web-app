@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Batch Processing Results</h2>
+    
+    {% if error %}
+    <div class="error">
+        <strong>❌ Batch processing failed:</strong> {{ error }}
+    </div>
+    {% else %}
+    <div class="info">
+        <strong>Total files:</strong> {{ total }}<br>
+        <strong>Successful:</strong> <span style="color: green;">{{ successful }}</span><br>
+        <strong>Failed:</strong> <span style="color: red;">{{ failed }}</span><br>
+        <strong>Summary length:</strong> {{ length }}<br>
+        <strong>Processed:</strong> {{ timestamp.strftime('%Y-%m-%d %H:%M:%S') if timestamp else 'N/A' }}
+    </div>
+    {% endif %}
+</div>
+
+{% if results %}
+{% for result in results %}
+<div class="card">
+    <h3>📄 {{ result.filename }}</h3>
+    
+    {% if result.success %}
+    <div style="background-color: #d4edda; padding: 15px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #28a745;">
+        <strong>✅ Success</strong>
+        <div style="margin-top: 10px; background-color: white; padding: 15px; border-radius: 4px;">
+            <p style="white-space: pre-wrap; line-height: 1.8;">{{ result.summary }}</p>
+        </div>
+    </div>
+    {% else %}
+    <div style="background-color: #f8d7da; padding: 15px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #dc3545;">
+        <strong>❌ Failed</strong>
+        <p style="margin-top: 10px;">{{ result.error }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="card">
+    <a href="/batch" class="btn">Process Another Batch</a>
+    <a href="/" class="btn" style="margin-left: 10px;">Back to Home</a>
+</div>
+{% endblock %}

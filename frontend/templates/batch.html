@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Batch Processing</h2>
+    <p>Upload multiple files at once for batch summarization.</p>
+    
+    <div class="info">
+        <strong>Maximum files:</strong> {{ max_files }} per batch<br>
+        <strong>Maximum file size:</strong> {{ max_file_size }}MB per file<br>
+        <strong>Allowed formats:</strong> PDF, DOCX, TXT
+    </div>
+    
+    <form method="POST" action="/batch" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="files">Select Files:</label>
+            <input type="file" id="files" name="files" accept=".pdf,.docx,.txt" multiple required>
+        </div>
+        
+        <div class="form-group">
+            <label for="length">Summary Length (applies to all):</label>
+            <select id="length" name="length">
+                <option value="short">Short (1-2 sentences)</option>
+                <option value="medium" selected>Medium (2-4 sentences)</option>
+                <option value="long">Long (4-8 sentences)</option>
+            </select>
+        </div>
+        
+        <button type="submit">Process Batch</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>📦 Batch Processing Tips</h3>
+    <ul style="list-style-position: inside; line-height: 2;">
+        <li>Select multiple files using Ctrl+Click (Windows) or Cmd+Click (Mac)</li>
+        <li>All files will use the same summary length setting</li>
+        <li>Processing time increases with the number of files</li>
+        <li>Failed files won't stop the batch - other files will continue processing</li>
+    </ul>
+</div>
+{% endblock %}

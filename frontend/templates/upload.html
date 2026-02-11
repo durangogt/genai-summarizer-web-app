@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Upload Document</h2>
+    <p>Upload a PDF, DOCX, or TXT file to generate a summary.</p>
+    
+    <div class="info">
+        <strong>Allowed formats:</strong> {{ allowed_extensions }}<br>
+        <strong>Maximum file size:</strong> {{ max_file_size }}MB
+    </div>
+    
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Select File:</label>
+            <input type="file" id="file" name="file" accept=".pdf,.docx,.txt" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="length">Summary Length:</label>
+            <select id="length" name="length">
+                <option value="short">Short (1-2 sentences)</option>
+                <option value="medium" selected>Medium (2-4 sentences)</option>
+                <option value="long">Long (4-8 sentences)</option>
+            </select>
+        </div>
+        
+        <button type="submit">Upload and Summarize</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>📋 Supported Formats</h3>
+    <ul style="list-style-position: inside; line-height: 2;">
+        <li><strong>PDF</strong> - Portable Document Format files</li>
+        <li><strong>DOCX</strong> - Microsoft Word documents</li>
+        <li><strong>TXT</strong> - Plain text files</li>
+    </ul>
+</div>
+{% endblock %}
