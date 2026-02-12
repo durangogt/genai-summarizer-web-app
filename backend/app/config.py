@@ -29,6 +29,10 @@ class Config:
     MAX_BATCH_FILES: int = int(os.getenv("MAX_BATCH_FILES", "10"))
     ALLOWED_EXTENSIONS: set = {".txt", ".pdf", ".docx", ".html"}
     
+    # Network Configuration
+    VERIFY_SSL_CERTIFICATES: bool = os.getenv("VERIFY_SSL_CERTIFICATES", "false").lower() == "true"
+    URL_FETCH_TIMEOUT: int = int(os.getenv("URL_FETCH_TIMEOUT", "10"))
+    
     # Summary Configuration
     SUMMARY_LENGTHS = {
         "short": {"max_tokens": 150, "description": "Brief summary (1-2 sentences)"},

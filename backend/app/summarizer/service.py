@@ -10,7 +10,11 @@ from typing import Literal, Optional
 
 from backend.app.config import config
 from backend.app.logger import app_logger
-from backend.app.errors import InvalidRequestError
+from backend.app.errors import (
+    InvalidRequestError,
+    SummarizerException,
+    get_user_friendly_message,
+)
 from backend.app.summarizer.utils import (
     extract_text,
     extract_text_from_url,
@@ -47,12 +51,19 @@ class SummarizerService:
 
         Raises:
             InvalidRequestError: If the text is empty.
+            SummarizerException: With a user-friendly message on failure.
         """
         if not text.strip():
             raise InvalidRequestError("Text cannot be empty")
 
-        app_logger.info(f"Generating {length} summary for text input")
-        return summarizer_engine.summarize(text, length)
+        try:
+            app_logger.info(f"Generating {length} summary for text input")
+            return summarizer_engine.summarize(text, length)
+        except SummarizerException:
+            raise
+        except Exception as e:
+            app_logger.error(f"Text summarization failed unexpectedly: {str(e)}")
+            raise SummarizerException(get_user_friendly_message(e))
 
     def summarize_file(
         self,
@@ -71,13 +82,22 @@ class SummarizerService:
 
         Returns:
             Generated summary string.
-        """
-        validate_file_size(len(file_content), config.MAX_FILE_SIZE_MB)
-        file_extension = os.path.splitext(filename)[1].lower()
-        text = extract_text(file_content, file_extension)
 
-        app_logger.info(f"Generating {length} summary for file: {filename}")
-        return summarizer_engine.summarize(text, length)
+        Raises:
+            SummarizerException: With a user-friendly message on failure.
+        """
+        try:
+            validate_file_size(len(file_content), config.MAX_FILE_SIZE_MB)
+            file_extension = os.path.splitext(filename)[1].lower()
+            text = extract_text(file_content, file_extension)
+
+            app_logger.info(f"Generating {length} summary for file: {filename}")
+            return summarizer_engine.summarize(text, length)
+        except SummarizerException:
+            raise
+        except Exception as e:
+            app_logger.error(f"File summarization failed for {filename}: {str(e)}")
+            raise SummarizerException(get_user_friendly_message(e))
 
     def summarize_url(
         self,
@@ -92,11 +112,20 @@ class SummarizerService:
 
         Returns:
             Generated summary string.
-        """
-        text = extract_text_from_url(url)
 
-        app_logger.info(f"Generating {length} summary for URL: {url}")
-        return summarizer_engine.summarize(text, length)
+        Raises:
+            SummarizerException: With a user-friendly message on failure.
+        """
+        try:
+            text = extract_text_from_url(url)
+
+            app_logger.info(f"Generating {length} summary for URL: {url}")
+            return summarizer_engine.summarize(text, length)
+        except SummarizerException:
+            raise
+        except Exception as e:
+            app_logger.error(f"URL summarization failed for {url}: {str(e)}")
+            raise SummarizerException(get_user_friendly_message(e))
 
     def summarize_batch(
         self,
@@ -134,16 +163,19 @@ class SummarizerService:
                     }
                 )
             except Exception as e:
+                friendly = get_user_friendly_message(e)
                 results.append(
                     {
                         "index": idx,
                         "filename": filename,
                         "success": False,
                         "summary": None,
-                        "error": str(e),
+                        "error": friendly,
                     }
                 )
-                app_logger.error(f"Batch file {filename} failed: {str(e)}")
+                app_logger.error(
+                    f"Batch file {filename} failed: {str(e)} | User message: {friendly}"
+                )
 
         return results
 

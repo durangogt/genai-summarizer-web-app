@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 
 from backend.app.logger import app_logger
 from backend.app.config import config
+from backend.app.errors import get_user_friendly_message
 from backend.app.summarizer.service import summarizer_service
 
 
@@ -76,7 +77,7 @@ async def process_upload(
             "request": request,
             "title": "Summary Result",
             "success": False,
-            "error": str(e),
+            "error": get_user_friendly_message(e),
             "source": file.filename if file else "unknown",
             "timestamp": datetime.utcnow()
         })
@@ -128,7 +129,7 @@ async def process_text(
             "request": request,
             "title": "Summary Result",
             "success": False,
-            "error": str(e),
+            "error": get_user_friendly_message(e),
             "source": "Direct Text Input",
             "timestamp": datetime.utcnow()
         })
@@ -181,7 +182,7 @@ async def process_url(
             "request": request,
             "title": "Summary Result",
             "success": False,
-            "error": str(e),
+            "error": get_user_friendly_message(e),
             "source": url if url else "unknown",
             "timestamp": datetime.utcnow()
         })
@@ -272,6 +273,6 @@ async def process_batch(
             "total": 0,
             "successful": 0,
             "failed": 0,
-            "error": str(e),
+            "error": get_user_friendly_message(e),
             "timestamp": datetime.utcnow()
         })
