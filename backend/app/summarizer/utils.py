@@ -1,12 +1,26 @@
 """Text extraction utilities for PDF, DOCX, and web URLs."""
 import io
+import ssl
 from typing import Optional
 import requests
+from requests.exceptions import SSLError
+import urllib3
 from PyPDF2 import PdfReader
 from docx import Document
 from bs4 import BeautifulSoup
-from backend.app.errors import FileProcessingError, UnsupportedFormatError, URLFetchError
+from backend.app.config import config
+from backend.app.errors import (
+    FileProcessingError,
+    UnsupportedFormatError,
+    URLFetchError,
+    SSLVerificationError,
+)
 from backend.app.logger import app_logger
+
+# Disable SSL warnings when SSL verification is disabled
+if not config.VERIFY_SSL_CERTIFICATES:
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    app_logger.warning("SSL certificate verification is disabled. This is insecure for production use.")
 
 
 def extract_text_from_pdf(file_content: bytes) -> str:
@@ -80,26 +94,35 @@ def extract_text_from_docx(file_content: bytes) -> str:
         raise FileProcessingError(f"Failed to extract text from DOCX: {str(e)}")
 
 
-def extract_text_from_url(url: str, timeout: int = 10) -> str:
+def extract_text_from_url(url: str, timeout: int = None) -> str:
     """
     Extract text from web URL.
     
     Args:
         url: Web URL to fetch
-        timeout: Request timeout in seconds
+        timeout: Request timeout in seconds (uses config default if not provided)
         
     Returns:
         Extracted text as string
         
     Raises:
         URLFetchError: If URL fetching or parsing fails
+        SSLVerificationError: If SSL verification fails (when enabled)
     """
+    if timeout is None:
+        timeout = config.URL_FETCH_TIMEOUT
+    
     try:
         # Fetch URL content
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-        response = requests.get(url, headers=headers, timeout=timeout)
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=timeout,
+            verify=config.VERIFY_SSL_CERTIFICATES
+        )
         response.raise_for_status()
         
         # Parse HTML
@@ -122,7 +145,22 @@ def extract_text_from_url(url: str, timeout: int = 10) -> str:
         
         app_logger.info(f"Extracted {len(text)} characters from URL: {url}")
         return text
-        
+    
+    except SSLError as e:
+        # Only raise SSL error if verification is enabled
+        if config.VERIFY_SSL_CERTIFICATES:
+            app_logger.error(f"SSL verification failed for URL {url}: {str(e)}")
+            raise SSLVerificationError(
+                f"SSL certificate verification failed for {url}. "
+                "The site may have a self-signed or invalid certificate."
+            )
+        else:
+            # This shouldn't happen since we're bypassing verification
+            app_logger.error(f"SSL error despite disabled verification for {url}: {str(e)}")
+            raise URLFetchError(f"Failed to establish connection to {url}")
+    except requests.Timeout:
+        app_logger.error(f"Timeout while fetching URL: {url}")
+        raise URLFetchError(f"The request timed out. The URL may be slow or unreachable.")
     except requests.RequestException as e:
         app_logger.error(f"URL fetch failed: {str(e)}")
         raise URLFetchError(f"Failed to fetch URL: {str(e)}")

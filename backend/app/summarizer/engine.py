@@ -1,9 +1,15 @@
 """Summarization engine using GitHub Models."""
+import time
 from typing import Literal, Optional
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 from backend.app.config import config
-from backend.app.errors import SummarizationError
+from backend.app.errors import SummarizationError, APIConnectionError, TokenLimitExceededError
 from backend.app.logger import app_logger
+
+# Retry configuration
+_MAX_RETRIES = 3
+_BASE_DELAY_SECONDS = 1.0
+_BACKOFF_FACTOR = 2.0
 
 
 class SummarizerEngine:
@@ -58,28 +64,68 @@ class SummarizerEngine:
             # Prepare user message
             user_message = f"Please summarize the following text:\n\n{text}"
             
-            # Call GitHub Models
+            # Call GitHub Models with retry + exponential backoff
             app_logger.info(f"Generating {length} summary (max_tokens={max_tokens})")
             
-            response = self.client.chat.completions.create(
-                model=config.GITHUB_MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": user_message}
-                ],
-                max_tokens=max_tokens,
-                temperature=0.7
+            last_exception: Optional[Exception] = None
+            for attempt in range(1, _MAX_RETRIES + 1):
+                try:
+                    response = self.client.chat.completions.create(
+                        model=config.GITHUB_MODEL_NAME,
+                        messages=[
+                            {"role": "system", "content": system_message},
+                            {"role": "user", "content": user_message}
+                        ],
+                        max_tokens=max_tokens,
+                        temperature=0.7
+                    )
+                    
+                    # Extract summary from response
+                    summary = response.choices[0].message.content.strip()
+                    
+                    if not summary:
+                        raise SummarizationError("Generated summary is empty")
+                    
+                    app_logger.info(f"Summary generated successfully ({len(summary)} characters)")
+                    return summary
+                    
+                except SummarizationError:
+                    # Do not retry on empty-summary logic errors
+                    raise
+                except BadRequestError as e:
+                    # Check if it's a token limit error
+                    error_message = str(e).lower()
+                    if "token" in error_message or "length" in error_message or "too long" in error_message:
+                        app_logger.error(f"Token limit exceeded: {str(e)}")
+                        raise TokenLimitExceededError(
+                            "The input text is too long for the AI model. "
+                            "Please try with a shorter document or select a shorter summary length."
+                        )
+                    else:
+                        app_logger.error(f"Bad request to AI API: {str(e)}")
+                        raise SummarizationError(f"AI service rejected the request: {str(e)}")
+                except Exception as e:
+                    last_exception = e
+                    if attempt < _MAX_RETRIES:
+                        delay = _BASE_DELAY_SECONDS * (_BACKOFF_FACTOR ** (attempt - 1))
+                        app_logger.warning(
+                            f"AI API call failed (attempt {attempt}/{_MAX_RETRIES}): {str(e)}. "
+                            f"Retrying in {delay:.1f}s..."
+                        )
+                        time.sleep(delay)
+                    else:
+                        app_logger.error(
+                            f"AI API call failed after {_MAX_RETRIES} attempts: {str(e)}"
+                        )
+            
+            # All retries exhausted
+            raise APIConnectionError(
+                f"The AI service is temporarily unavailable after {_MAX_RETRIES} attempts. "
+                "Please try again later."
             )
             
-            # Extract summary from response
-            summary = response.choices[0].message.content.strip()
-            
-            if not summary:
-                raise SummarizationError("Generated summary is empty")
-            
-            app_logger.info(f"Summary generated successfully ({len(summary)} characters)")
-            return summary
-            
+        except (SummarizationError, APIConnectionError):
+            raise
         except Exception as e:
             app_logger.error(f"Summarization failed: {str(e)}")
             raise SummarizationError(f"Failed to generate summary: {str(e)}")

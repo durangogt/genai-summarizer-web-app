@@ -10,7 +10,9 @@ from backend.app.config import config
 from backend.app.logger import app_logger
 from backend.app.errors import (
     AuthenticationError,
-    InvalidRequestError
+    InvalidRequestError,
+    SummarizerException,
+    get_user_friendly_message,
 )
 from backend.app.summarizer.service import summarizer_service
 
@@ -127,7 +129,7 @@ async def summarize_text(
             summary=None,
             length=request.length,
             timestamp=datetime.utcnow(),
-            error=str(e)
+            error=get_user_friendly_message(e)
         )
 
 
@@ -162,7 +164,7 @@ async def summarize_url(
             summary=None,
             length=request.length,
             timestamp=datetime.utcnow(),
-            error=str(e)
+            error=get_user_friendly_message(e)
         )
 
 
@@ -199,7 +201,7 @@ async def summarize_file(
             summary=None,
             length=length,
             timestamp=datetime.utcnow(),
-            error=str(e)
+            error=get_user_friendly_message(e)
         )
 
 
