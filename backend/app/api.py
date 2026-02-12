@@ -1,27 +1,18 @@
 """REST API endpoints for summarization service."""
 from datetime import datetime, timedelta
 from typing import Literal, Optional
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, Form, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, HttpUrl
 from jose import JWTError, jwt
-import os
 
 from backend.app.config import config
 from backend.app.logger import app_logger
 from backend.app.errors import (
-    FileProcessingError, 
-    UnsupportedFormatError,
-    FileSizeExceededError,
     AuthenticationError,
     InvalidRequestError
 )
-from backend.app.summarizer.utils import (
-    extract_text, 
-    extract_text_from_url,
-    validate_file_size
-)
-from backend.app.summarizer.engine import summarizer_engine
+from backend.app.summarizer.service import summarizer_service
 
 
 # API Router
@@ -29,9 +20,6 @@ router = APIRouter(prefix="/api", tags=["api"])
 
 # Security
 security = HTTPBearer()
-
-# In-memory storage for summaries (replace with database in production)
-summary_history = []
 
 
 # Pydantic Models
@@ -118,21 +106,13 @@ async def summarize_text(
     try:
         app_logger.info(f"Text summarization requested by {token_data.username} (length: {request.length})")
         
-        if not request.text.strip():
-            raise InvalidRequestError("Text cannot be empty")
-        
-        summary = summarizer_engine.summarize(request.text, request.length)
-        
-        # Store in history
-        history_entry = {
-            "id": len(summary_history) + 1,
-            "user": token_data.username,
-            "type": "text",
-            "length": request.length,
-            "summary": summary,
-            "timestamp": datetime.utcnow()
-        }
-        summary_history.append(history_entry)
+        summary = summarizer_service.summarize_text(request.text, request.length)
+        summarizer_service.add_api_history(
+            user=token_data.username,
+            source_type="text",
+            length=request.length,
+            summary=summary,
+        )
         
         return SummaryResponse(
             success=True,
@@ -160,20 +140,14 @@ async def summarize_url(
     try:
         app_logger.info(f"URL summarization requested by {token_data.username}: {request.url}")
         
-        text = extract_text_from_url(str(request.url))
-        summary = summarizer_engine.summarize(text, request.length)
-        
-        # Store in history
-        history_entry = {
-            "id": len(summary_history) + 1,
-            "user": token_data.username,
-            "type": "url",
-            "source": str(request.url),
-            "length": request.length,
-            "summary": summary,
-            "timestamp": datetime.utcnow()
-        }
-        summary_history.append(history_entry)
+        summary = summarizer_service.summarize_url(str(request.url), request.length)
+        summarizer_service.add_api_history(
+            user=token_data.username,
+            source_type="url",
+            length=request.length,
+            summary=summary,
+            source=str(request.url),
+        )
         
         return SummaryResponse(
             success=True,
@@ -202,32 +176,15 @@ async def summarize_file(
     try:
         app_logger.info(f"File summarization requested by {token_data.username}: {file.filename}")
         
-        # Read file content
         content = await file.read()
-        
-        # Validate file size
-        validate_file_size(len(content), config.MAX_FILE_SIZE_MB)
-        
-        # Get file extension
-        file_extension = os.path.splitext(file.filename)[1].lower()
-        
-        # Extract text
-        text = extract_text(content, file_extension)
-        
-        # Generate summary
-        summary = summarizer_engine.summarize(text, length)
-        
-        # Store in history
-        history_entry = {
-            "id": len(summary_history) + 1,
-            "user": token_data.username,
-            "type": "file",
-            "source": file.filename,
-            "length": length,
-            "summary": summary,
-            "timestamp": datetime.utcnow()
-        }
-        summary_history.append(history_entry)
+        summary = summarizer_service.summarize_file(content, file.filename, length)
+        summarizer_service.add_api_history(
+            user=token_data.username,
+            source_type="file",
+            length=length,
+            summary=summary,
+            source=file.filename,
+        )
         
         return SummaryResponse(
             success=True,
@@ -256,42 +213,15 @@ async def summarize_batch(
     try:
         app_logger.info(f"Batch summarization requested by {token_data.username}: {len(files)} files")
         
-        # Validate batch size
-        if len(files) > config.MAX_BATCH_FILES:
-            raise InvalidRequestError(f"Maximum {config.MAX_BATCH_FILES} files allowed per batch")
+        # Read all file contents first (async I/O)
+        file_data = []
+        for file in files:
+            content = await file.read()
+            file_data.append((content, file.filename))
         
-        results = []
-        successful = 0
-        failed = 0
-        
-        for idx, file in enumerate(files):
-            try:
-                content = await file.read()
-                validate_file_size(len(content), config.MAX_FILE_SIZE_MB)
-                
-                file_extension = os.path.splitext(file.filename)[1].lower()
-                text = extract_text(content, file_extension)
-                summary = summarizer_engine.summarize(text, length)
-                
-                results.append({
-                    "index": idx,
-                    "filename": file.filename,
-                    "success": True,
-                    "summary": summary,
-                    "error": None
-                })
-                successful += 1
-                
-            except Exception as e:
-                results.append({
-                    "index": idx,
-                    "filename": file.filename,
-                    "success": False,
-                    "summary": None,
-                    "error": str(e)
-                })
-                failed += 1
-                app_logger.error(f"Batch file {file.filename} failed: {str(e)}")
+        results = summarizer_service.summarize_batch(file_data, length)
+        successful = sum(1 for r in results if r["success"])
+        failed = sum(1 for r in results if not r["success"])
         
         return BatchSummaryResponse(
             success=True,
@@ -312,13 +242,7 @@ async def get_history(
     token_data: TokenData = Depends(verify_token)
 ):
     """Get summarization history for current user."""
-    user_history = [
-        entry for entry in summary_history 
-        if entry["user"] == token_data.username
-    ]
-    
-    # Return most recent entries
-    recent_history = sorted(user_history, key=lambda x: x["timestamp"], reverse=True)[:limit]
+    recent_history = summarizer_service.get_api_history(token_data.username, limit)
     
     app_logger.info(f"History requested by {token_data.username}: {len(recent_history)} entries")
     

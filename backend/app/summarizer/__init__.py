@@ -1,1 +1,1 @@
-"""Summarizer module for text extraction and summarization."""
+"""Summarizer module for text extraction, summarization, and service layer."""

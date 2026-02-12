@@ -1,19 +1,12 @@
 """Web UI backend logic using FastAPI and Jinja2 templates."""
 from datetime import datetime
-from typing import Optional
 from fastapi import APIRouter, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-import os
 
 from backend.app.logger import app_logger
 from backend.app.config import config
-from backend.app.summarizer.utils import (
-    extract_text,
-    extract_text_from_url,
-    validate_file_size
-)
-from backend.app.summarizer.engine import summarizer_engine
+from backend.app.summarizer.service import summarizer_service
 
 
 # UI Router
@@ -21,9 +14,6 @@ router = APIRouter(tags=["ui"])
 
 # Setup Jinja2 templates
 templates = Jinja2Templates(directory="frontend/templates")
-
-# In-memory storage for UI sessions (replace with proper session management)
-ui_history = []
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -58,31 +48,14 @@ async def process_upload(
     try:
         app_logger.info(f"Processing upload: {file.filename}")
         
-        # Read file content
         content = await file.read()
-        
-        # Validate file size
-        validate_file_size(len(content), config.MAX_FILE_SIZE_MB)
-        
-        # Get file extension
-        file_extension = os.path.splitext(file.filename)[1].lower()
-        
-        # Extract text
-        text = extract_text(content, file_extension)
-        
-        # Generate summary
-        summary = summarizer_engine.summarize(text, length)
-        
-        # Store in history
-        history_entry = {
-            "id": len(ui_history) + 1,
-            "type": "file",
-            "source": file.filename,
-            "length": length,
-            "summary": summary,
-            "timestamp": datetime.utcnow()
-        }
-        ui_history.append(history_entry)
+        summary = summarizer_service.summarize_file(content, file.filename, length)
+        summarizer_service.add_ui_history(
+            source_type="file",
+            length=length,
+            summary=summary,
+            source=file.filename,
+        )
         
         app_logger.info(f"Upload processed successfully: {file.filename}")
         
@@ -129,21 +102,12 @@ async def process_text(
     try:
         app_logger.info("Processing text input")
         
-        if not text.strip():
-            raise ValueError("Text cannot be empty")
-        
-        # Generate summary
-        summary = summarizer_engine.summarize(text, length)
-        
-        # Store in history
-        history_entry = {
-            "id": len(ui_history) + 1,
-            "type": "text",
-            "length": length,
-            "summary": summary,
-            "timestamp": datetime.utcnow()
-        }
-        ui_history.append(history_entry)
+        summary = summarizer_service.summarize_text(text, length)
+        summarizer_service.add_ui_history(
+            source_type="text",
+            length=length,
+            summary=summary,
+        )
         
         app_logger.info("Text processed successfully")
         
@@ -190,22 +154,13 @@ async def process_url(
     try:
         app_logger.info(f"Processing URL: {url}")
         
-        # Extract text from URL
-        text = extract_text_from_url(url)
-        
-        # Generate summary
-        summary = summarizer_engine.summarize(text, length)
-        
-        # Store in history
-        history_entry = {
-            "id": len(ui_history) + 1,
-            "type": "url",
-            "source": url,
-            "length": length,
-            "summary": summary,
-            "timestamp": datetime.utcnow()
-        }
-        ui_history.append(history_entry)
+        summary = summarizer_service.summarize_url(url, length)
+        summarizer_service.add_ui_history(
+            source_type="url",
+            length=length,
+            summary=summary,
+            source=url,
+        )
         
         app_logger.info(f"URL processed successfully: {url}")
         
@@ -237,8 +192,7 @@ async def history_page(request: Request):
     """Render history page."""
     app_logger.info("History page accessed")
     
-    # Get recent history (most recent first)
-    recent_history = sorted(ui_history, key=lambda x: x["timestamp"], reverse=True)[:20]
+    recent_history = summarizer_service.get_ui_history()
     
     return templates.TemplateResponse("history.html", {
         "request": request,
@@ -278,11 +232,7 @@ async def process_batch(
         for file in files:
             try:
                 content = await file.read()
-                validate_file_size(len(content), config.MAX_FILE_SIZE_MB)
-                
-                file_extension = os.path.splitext(file.filename)[1].lower()
-                text = extract_text(content, file_extension)
-                summary = summarizer_engine.summarize(text, length)
+                summary = summarizer_service.summarize_file(content, file.filename, length)
                 
                 results.append({
                     "filename": file.filename,
