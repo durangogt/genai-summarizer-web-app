@@ -41,7 +41,7 @@ class TestSummarizerEngine:
     
     def test_engine_initialization(self):
         """Test that engine initializes without errors when config is valid."""
-        # This test will fail if Azure OpenAI credentials are not set
+        # This test will fail if GitHub Models credentials are not set
         try:
             from backend.app.summarizer.engine import summarizer_engine
             assert summarizer_engine is not None
@@ -56,7 +56,7 @@ class TestSummarizerEngine:
             # This will fail without valid credentials but tests parameter handling
             result = summarizer_engine.summarize("Test text", "invalid_length")
         except Exception:
-            # Expected to fail without valid Azure credentials
+            # Expected to fail without valid GitHub credentials
             pass
 
 

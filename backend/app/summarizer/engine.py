@@ -1,25 +1,24 @@
-"""Summarization engine using Azure OpenAI."""
+"""Summarization engine using GitHub Models."""
 from typing import Literal, Optional
-from openai import AzureOpenAI
+from openai import OpenAI
 from backend.app.config import config
 from backend.app.errors import SummarizationError
 from backend.app.logger import app_logger
 
 
 class SummarizerEngine:
-    """Summarization engine using Azure OpenAI."""
+    """Summarization engine using GitHub Models."""
     
     def __init__(self):
-        """Initialize Azure OpenAI client."""
+        """Initialize GitHub Models client."""
         try:
-            self.client = AzureOpenAI(
-                api_key=config.AZURE_OPENAI_API_KEY,
-                api_version=config.AZURE_OPENAI_API_VERSION,
-                azure_endpoint=config.AZURE_OPENAI_ENDPOINT
+            self.client = OpenAI(
+                api_key=config.GITHUB_TOKEN,
+                base_url=config.GITHUB_MODELS_ENDPOINT
             )
-            app_logger.info("Azure OpenAI client initialized")
+            app_logger.info("GitHub Models client initialized")
         except Exception as e:
-            app_logger.error(f"Failed to initialize Azure OpenAI client: {str(e)}")
+            app_logger.error(f"Failed to initialize GitHub Models client: {str(e)}")
             raise SummarizationError(f"Failed to initialize summarization engine: {str(e)}")
     
     def summarize(
@@ -59,11 +58,11 @@ class SummarizerEngine:
             # Prepare user message
             user_message = f"Please summarize the following text:\n\n{text}"
             
-            # Call Azure OpenAI
+            # Call GitHub Models
             app_logger.info(f"Generating {length} summary (max_tokens={max_tokens})")
             
             response = self.client.chat.completions.create(
-                model=config.AZURE_OPENAI_DEPLOYMENT,
+                model=config.GITHUB_MODEL_NAME,
                 messages=[
                     {"role": "system", "content": system_message},
                     {"role": "user", "content": user_message}

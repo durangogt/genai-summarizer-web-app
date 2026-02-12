@@ -25,8 +25,8 @@ def main():
         except ValueError as e:
             app_logger.error(f"✗ Configuration error: {str(e)}")
             app_logger.error("Please set required environment variables:")
-            app_logger.error("  - AZURE_OPENAI_API_KEY")
-            app_logger.error("  - AZURE_OPENAI_ENDPOINT")
+            app_logger.error("  - GITHUB_TOKEN")
+            app_logger.error("  - GITHUB_MODELS_ENDPOINT")
             sys.exit(1)
         
         # Start the server
