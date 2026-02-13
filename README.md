@@ -1,5 +1,7 @@
 # GenAI Summarizer Web App
 
+[![Deploy to GitHub Pages](https://github.com/durangogt/genai-summarizer-web-app/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/durangogt/genai-summarizer-web-app/actions/workflows/deploy-pages.yml)
+
 A self-hosted Python application that generates concise summaries from text documents, PDFs, DOCX files, and web URLs using GitHub Models.
 
 ## Overview
