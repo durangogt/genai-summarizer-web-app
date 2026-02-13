@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Guide - GenAI Summarizer Web App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🔧 Setup Guide</h1>
+            <p class="subtitle">Step-by-step instructions to deploy your summarizer</p>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="setup.html" class="active">Setup Guide</a></li>
+                <li><a href="api.html">API Documentation</a></li>
+                <li><a href="https://github.com/durangogt/genai-summarizer-web-app" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <section>
+            <h2>Prerequisites</h2>
+            <ul>
+                <li><strong>Python 3.8+</strong> installed on your system</li>
+                <li><strong>Azure OpenAI</strong> account with API access</li>
+                <li><strong>Git</strong> for cloning the repository</li>
+                <li><strong>Virtual environment</strong> tool (venv or virtualenv)</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Step 1: Clone the Repository</h2>
+            <div class="code-block">
+                <pre><code>git clone https://github.com/durangogt/genai-summarizer-web-app.git
+cd genai-summarizer-web-app</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Step 2: Create Virtual Environment</h2>
+            <p>It's recommended to use a Python virtual environment to isolate dependencies.</p>
+            
+            <h3>On Linux/macOS:</h3>
+            <div class="code-block">
+                <pre><code>python -m venv venv
+source venv/bin/activate</code></pre>
+            </div>
+
+            <h3>On Windows:</h3>
+            <div class="code-block">
+                <pre><code>python -m venv venv
+venv\Scripts\activate</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Step 3: Install Dependencies</h2>
+            <div class="code-block">
+                <pre><code>pip install --upgrade pip
+pip install -r requirements.txt</code></pre>
+            </div>
+            <p>This will install all required Python packages including FastAPI, Uvicorn, and Azure OpenAI SDK.</p>
+        </section>
+
+        <section>
+            <h2>Step 4: Configure Environment Variables</h2>
+            <p>Create a <code>.env</code> file in the root directory with your Azure OpenAI credentials:</p>
+            
+            <div class="code-block">
+                <pre><code># Copy the template
+cp .env.template .env
+
+# Edit .env with your credentials
+# Required variables:
+AZURE_OPENAI_API_KEY=your_api_key_here
+AZURE_OPENAI_ENDPOINT=your_endpoint_url_here
+
+# Optional variables:
+PORT=8000
+LOG_LEVEL=INFO
+SECRET_KEY=your_secret_key_for_jwt</code></pre>
+            </div>
+
+            <h3>Getting Azure OpenAI Credentials</h3>
+            <ol>
+                <li>Log in to the <a href="https://portal.azure.com" target="_blank">Azure Portal</a></li>
+                <li>Navigate to your Azure OpenAI resource</li>
+                <li>Go to "Keys and Endpoint" section</li>
+                <li>Copy your API key and endpoint URL</li>
+            </ol>
+        </section>
+
+        <section>
+            <h2>Step 5: Run the Application</h2>
+            <div class="code-block">
+                <pre><code>python run.py</code></pre>
+            </div>
+            <p>The application will start on <code>http://127.0.0.1:8000</code> by default.</p>
+        </section>
+
+        <section>
+            <h2>Step 6: Access the Web Interface</h2>
+            <p>Open your browser and navigate to:</p>
+            <div class="code-block">
+                <pre><code>http://127.0.0.1:8000</code></pre>
+            </div>
+            <p>You should see the GenAI Summarizer homepage with options to:</p>
+            <ul>
+                <li>Summarize plain text</li>
+                <li>Upload files (PDF, DOCX)</li>
+                <li>Summarize web URLs</li>
+                <li>Batch process multiple files</li>
+                <li>View summary history</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Step 7: Test the API</h2>
+            <p>The REST API is available at <code>http://127.0.0.1:8000/api</code>. You can test endpoints using curl, Postman, or any HTTP client.</p>
+            
+            <h3>Example API Request:</h3>
+            <div class="code-block">
+                <pre><code>curl -X POST "http://127.0.0.1:8000/api/summarize/text" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Your long text here...",
+    "length": "medium"
+  }'</code></pre>
+            </div>
+            
+            <p>See the <a href="api.html">API Documentation</a> for all available endpoints.</p>
+        </section>
+
+        <section>
+            <h2>Deployment Options</h2>
+            
+            <h3>Option 1: Local Development</h3>
+            <p>Run the application locally for testing and development using <code>python run.py</code>.</p>
+
+            <h3>Option 2: Production Deployment</h3>
+            <p>For production deployments, consider using:</p>
+            <ul>
+                <li><strong>Azure Web Apps:</strong> Use the included <code>startup.sh</code> script</li>
+                <li><strong>Docker:</strong> Create a Dockerfile for containerized deployment</li>
+                <li><strong>Linux Server:</strong> Use systemd or supervisor to manage the process</li>
+                <li><strong>Cloud VM:</strong> Deploy on AWS EC2, Google Cloud Compute, etc.</li>
+            </ul>
+
+            <h3>Production Configuration:</h3>
+            <div class="code-block">
+                <pre><code># For production, update run.py or set environment variables:
+HOST=0.0.0.0  # Allow external access
+PORT=80       # Standard HTTP port (requires sudo)
+LOG_LEVEL=WARNING  # Reduce log verbosity</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Troubleshooting</h2>
+            
+            <h3>Issue: "Module not found" errors</h3>
+            <p><strong>Solution:</strong> Make sure you activated the virtual environment and installed all dependencies.</p>
+            <div class="code-block">
+                <pre><code>source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt</code></pre>
+            </div>
+
+            <h3>Issue: "Configuration error: Missing required variables"</h3>
+            <p><strong>Solution:</strong> Ensure your <code>.env</code> file contains all required variables:</p>
+            <ul>
+                <li>AZURE_OPENAI_API_KEY</li>
+                <li>AZURE_OPENAI_ENDPOINT</li>
+            </ul>
+
+            <h3>Issue: Port already in use</h3>
+            <p><strong>Solution:</strong> Change the port in your <code>.env</code> file:</p>
+            <div class="code-block">
+                <pre><code>PORT=8080  # or any available port</code></pre>
+            </div>
+
+            <h3>Issue: File upload fails</h3>
+            <p><strong>Solution:</strong> Check that:</p>
+            <ul>
+                <li>File size is under 10MB</li>
+                <li>File format is supported (PDF, DOCX, TXT)</li>
+                <li>You have write permissions in the application directory</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Security Best Practices</h2>
+            <ul>
+                <li>✅ Never commit <code>.env</code> file to version control</li>
+                <li>✅ Use strong, unique values for <code>SECRET_KEY</code></li>
+                <li>✅ Rotate API keys regularly</li>
+                <li>✅ Use HTTPS in production (configure reverse proxy)</li>
+                <li>✅ Implement rate limiting for API endpoints</li>
+                <li>✅ Keep dependencies updated with <code>pip install --upgrade</code></li>
+                <li>✅ Monitor application logs for suspicious activity</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Next Steps</h2>
+            <ul>
+                <li>Explore the <a href="api.html">API Documentation</a> for integration options</li>
+                <li>Review the <a href="https://github.com/durangogt/genai-summarizer-web-app">GitHub repository</a> for source code</li>
+                <li>Customize the UI templates in <code>frontend/templates/</code></li>
+                <li>Add custom summarization logic in <code>backend/app/summarizer/</code></li>
+            </ul>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 GenAI Summarizer Web App | <a href="https://github.com/durangogt/genai-summarizer-web-app">GitHub Repository</a></p>
+            <p>Powered by Azure OpenAI | Built with Python & FastAPI</p>
+        </div>
+    </footer>
+</body>
+</html>

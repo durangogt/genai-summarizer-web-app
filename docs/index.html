@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI Summarizer Web App - Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🤖 GenAI Summarizer Web App</h1>
+            <p class="subtitle">A self-hosted Python application for intelligent document summarization</p>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="setup.html">Setup Guide</a></li>
+                <li><a href="api.html">API Documentation</a></li>
+                <li><a href="https://github.com/durangogt/genai-summarizer-web-app" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <section class="hero">
+            <h2>Transform Lengthy Documents into Concise Summaries</h2>
+            <p>Powered by Azure OpenAI, this application provides both a REST API and web interface for document summarization with support for multiple formats.</p>
+            <div class="cta-buttons">
+                <a href="setup.html" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/durangogt/genai-summarizer-web-app" class="btn btn-secondary" target="_blank">View on GitHub</a>
+            </div>
+        </section>
+
+        <section class="features">
+            <h2>Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Multi-Format Input</h3>
+                    <p>Supports plain text, PDF, DOCX files, and web URLs for maximum flexibility.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Configurable Summaries</h3>
+                    <p>Choose between short, medium, or long summaries based on your needs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔌</div>
+                    <h3>REST API</h3>
+                    <p>Integration-ready endpoints with JWT authentication for secure access.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Web Interface</h3>
+                    <p>Responsive UI with upload forms and summary history tracking.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h3>Batch Processing</h3>
+                    <p>Process up to 10 files simultaneously for efficient workflows.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Azure OpenAI</h3>
+                    <p>Leverages state-of-the-art AI models for accurate summarization.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="tech-stack">
+            <h2>Technology Stack</h2>
+            <div class="stack-list">
+                <div class="stack-item">
+                    <strong>Backend:</strong> FastAPI with Uvicorn
+                </div>
+                <div class="stack-item">
+                    <strong>Frontend:</strong> Python with Jinja2 templates
+                </div>
+                <div class="stack-item">
+                    <strong>AI Model:</strong> Azure OpenAI (GPT models)
+                </div>
+                <div class="stack-item">
+                    <strong>File Processing:</strong> PyPDF2, python-docx, BeautifulSoup4
+                </div>
+                <div class="stack-item">
+                    <strong>Authentication:</strong> JWT tokens via python-jose
+                </div>
+                <div class="stack-item">
+                    <strong>Logging:</strong> Loguru for comprehensive audit trails
+                </div>
+            </div>
+        </section>
+
+        <section class="quick-start">
+            <h2>Quick Start</h2>
+            <div class="code-block">
+                <pre><code># Clone the repository
+git clone https://github.com/durangogt/genai-summarizer-web-app.git
+cd genai-summarizer-web-app
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment variables
+cp .env.template .env
+# Edit .env with your Azure OpenAI credentials
+
+# Run the application
+python run.py
+
+# Access at http://127.0.0.1:8000</code></pre>
+            </div>
+        </section>
+
+        <section class="requirements">
+            <h2>Requirements</h2>
+            <ul>
+                <li>Python 3.8 or higher</li>
+                <li>Azure OpenAI API key and endpoint</li>
+                <li>10MB maximum file size per upload</li>
+                <li>Windows or Linux operating system</li>
+            </ul>
+        </section>
+
+        <section class="use-cases">
+            <h2>Use Cases</h2>
+            <div class="use-case-grid">
+                <div class="use-case">
+                    <h3>📚 Research</h3>
+                    <p>Quickly summarize academic papers and research documents.</p>
+                </div>
+                <div class="use-case">
+                    <h3>📰 News</h3>
+                    <p>Get concise summaries of news articles and blog posts.</p>
+                </div>
+                <div class="use-case">
+                    <h3>💼 Business</h3>
+                    <p>Process reports, contracts, and business documents efficiently.</p>
+                </div>
+                <div class="use-case">
+                    <h3>📖 Education</h3>
+                    <p>Create study notes from textbooks and learning materials.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="security">
+            <h2>Security & Privacy</h2>
+            <div class="security-info">
+                <div class="security-item">
+                    <strong>Self-Hosted:</strong> Complete control over your data - runs on your infrastructure.
+                </div>
+                <div class="security-item">
+                    <strong>Environment Variables:</strong> All secrets managed securely via environment variables.
+                </div>
+                <div class="security-item">
+                    <strong>JWT Authentication:</strong> Secure API access with industry-standard tokens.
+                </div>
+                <div class="security-item">
+                    <strong>No Data Retention:</strong> Summaries are generated on-demand without long-term storage.
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <h2>Ready to Get Started?</h2>
+            <p>Follow our comprehensive setup guide to deploy your own instance.</p>
+            <a href="setup.html" class="btn btn-large">Setup Guide →</a>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 GenAI Summarizer Web App | <a href="https://github.com/durangogt/genai-summarizer-web-app">GitHub Repository</a></p>
+            <p>Powered by Azure OpenAI | Built with Python & FastAPI</p>
+        </div>
+    </footer>
+</body>
+</html>
