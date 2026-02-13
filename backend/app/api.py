@@ -212,18 +212,63 @@ async def summarize_batch(
     token_data: TokenData = Depends(verify_token)
 ):
     """Batch summarize multiple files."""
+    from backend.app.logger import log_audit_event
+    
+    filenames = [f.filename for f in files]
+    
     try:
-        app_logger.info(f"Batch summarization requested by {token_data.username}: {len(files)} files")
+        app_logger.info(
+            f"Batch summarization requested by {token_data.username}: "
+            f"{len(files)} files, length={length}"
+        )
+        
+        # Log initial request
+        log_audit_event(
+            action="batch_request_received",
+            user_id=token_data.username,
+            status="started",
+            details={
+                "file_count": len(files),
+                "summary_length": length,
+                "filenames": filenames
+            }
+        )
         
         # Read all file contents first (async I/O)
         file_data = []
         for file in files:
             content = await file.read()
             file_data.append((content, file.filename))
+            app_logger.debug(
+                f"File read: user_id={token_data.username}, "
+                f"filename={file.filename}, size={len(content)} bytes"
+            )
         
-        results = summarizer_service.summarize_batch(file_data, length)
+        # Process batch with audit logging
+        results = summarizer_service.summarize_batch(
+            file_data, 
+            length,
+            user_id=token_data.username
+        )
         successful = sum(1 for r in results if r["success"])
         failed = sum(1 for r in results if not r["success"])
+        
+        # Log successful batch completion
+        log_audit_event(
+            action="batch_request_completed",
+            user_id=token_data.username,
+            status="success",
+            details={
+                "total_files": len(files),
+                "successful": successful,
+                "failed": failed
+            }
+        )
+        
+        app_logger.info(
+            f"Batch summarization completed for {token_data.username}: "
+            f"{successful}/{len(files)} successful"
+        )
         
         return BatchSummaryResponse(
             success=True,
@@ -234,7 +279,24 @@ async def summarize_batch(
         )
         
     except Exception as e:
-        app_logger.error(f"Batch summarization failed: {str(e)}")
+        error_msg = str(e)
+        friendly_msg = get_user_friendly_message(e)
+        
+        # Log batch failure
+        log_audit_event(
+            action="batch_request_completed",
+            user_id=token_data.username,
+            status="failed",
+            details={
+                "file_count": len(files),
+                "filenames": filenames
+            },
+            error=f"{error_msg} | User-friendly: {friendly_msg}"
+        )
+        
+        app_logger.error(
+            f"Batch summarization failed for {token_data.username}: {error_msg}"
+        )
         raise
 
 

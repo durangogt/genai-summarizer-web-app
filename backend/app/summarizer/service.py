@@ -131,12 +131,14 @@ class SummarizerService:
         self,
         files: list[tuple[bytes, str]],
         length: Literal["short", "medium", "long"] = "medium",
+        user_id: str = "system",
     ) -> list[dict]:
         """Validate and summarize a batch of files.
 
         Args:
             files: List of (file_content_bytes, filename) tuples.
             length: Desired summary length for all files.
+            user_id: User identifier for audit logging.
 
         Returns:
             List of result dicts with keys: index, filename, success, summary, error.
@@ -144,14 +146,38 @@ class SummarizerService:
         Raises:
             InvalidRequestError: If batch size exceeds the configured limit.
         """
+        from backend.app.logger import log_audit_event
+        
+        # Log batch start
+        log_audit_event(
+            action="batch_summarization",
+            user_id=user_id,
+            status="started",
+            details={
+                "batch_size": len(files),
+                "summary_length": length,
+                "filenames": [f for _, f in files]
+            }
+        )
+        
         if len(files) > config.MAX_BATCH_FILES:
-            raise InvalidRequestError(
-                f"Maximum {config.MAX_BATCH_FILES} files allowed per batch"
+            error_msg = f"Maximum {config.MAX_BATCH_FILES} files allowed per batch"
+            log_audit_event(
+                action="batch_summarization",
+                user_id=user_id,
+                status="failed",
+                details={"batch_size": len(files)},
+                error=error_msg
             )
+            raise InvalidRequestError(error_msg)
 
         results: list[dict] = []
         for idx, (content, filename) in enumerate(files):
             try:
+                app_logger.info(
+                    f"Processing batch item {idx + 1}/{len(files)}: "
+                    f"user_id={user_id}, filename={filename}"
+                )
                 summary = self.summarize_file(content, filename, length)
                 results.append(
                     {
@@ -160,6 +186,16 @@ class SummarizerService:
                         "success": True,
                         "summary": summary,
                         "error": None,
+                    }
+                )
+                log_audit_event(
+                    action="batch_item_processed",
+                    user_id=user_id,
+                    status="success",
+                    details={
+                        "batch_index": idx,
+                        "filename": filename,
+                        "summary_length": len(summary)
                     }
                 )
             except Exception as e:
@@ -173,10 +209,33 @@ class SummarizerService:
                         "error": friendly,
                     }
                 )
-                app_logger.error(
-                    f"Batch file {filename} failed: {str(e)} | User message: {friendly}"
+                log_audit_event(
+                    action="batch_item_processed",
+                    user_id=user_id,
+                    status="failed",
+                    details={
+                        "batch_index": idx,
+                        "filename": filename
+                    },
+                    error=f"{str(e)} | User-friendly: {friendly}"
                 )
 
+        # Log batch completion
+        successful_count = sum(1 for r in results if r["success"])
+        failed_count = sum(1 for r in results if not r["success"])
+        
+        log_audit_event(
+            action="batch_summarization",
+            user_id=user_id,
+            status="success" if failed_count == 0 else "partial_success",
+            details={
+                "total_files": len(files),
+                "successful": successful_count,
+                "failed": failed_count,
+                "success_rate": f"{(successful_count/len(files)*100):.1f}%"
+            }
+        )
+        
         return results
 
     # ------------------------------------------------------------------
