@@ -36,27 +36,32 @@ def extract_text_from_pdf(file_content: bytes) -> str:
     Raises:
         FileProcessingError: If PDF processing fails
     """
+    app_logger.info(f"Starting PDF text extraction: file_size={len(file_content)} bytes")
+    
     try:
         pdf_file = io.BytesIO(file_content)
         pdf_reader = PdfReader(pdf_file)
         
-        text = []
-        for page in pdf_reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text.append(page_text)
+        page_texts = []
+        for page_num, page in enumerate(pdf_reader.pages, start=1):
+            extracted_page_text = page.extract_text()
+            if extracted_page_text:
+                page_texts.append(extracted_page_text)
+                app_logger.debug(f"Extracted {len(extracted_page_text)} chars from page {page_num}")
         
-        extracted_text = "\n".join(text)
+        extracted_text = "\n".join(page_texts)
         
         if not extracted_text.strip():
             raise FileProcessingError("No text could be extracted from PDF")
         
-        app_logger.info(f"Extracted {len(extracted_text)} characters from PDF")
+        app_logger.info(f"PDF extraction completed: {len(extracted_text)} chars from {len(page_texts)} pages")
         return extracted_text
         
-    except Exception as e:
-        app_logger.error(f"PDF extraction failed: {str(e)}")
-        raise FileProcessingError(f"Failed to extract text from PDF: {str(e)}")
+    except FileProcessingError:
+        raise
+    except Exception as pdf_error:
+        app_logger.error(f"PDF extraction failed: {str(pdf_error)}")
+        raise FileProcessingError(f"Failed to extract text from PDF: {str(pdf_error)}")
 
 
 def extract_text_from_docx(file_content: bytes) -> str:
@@ -72,26 +77,46 @@ def extract_text_from_docx(file_content: bytes) -> str:
     Raises:
         FileProcessingError: If DOCX processing fails
     """
+    app_logger.info(f"Starting DOCX text extraction: file_size={len(file_content)} bytes")
+    
     try:
         docx_file = io.BytesIO(file_content)
-        doc = Document(docx_file)
+        docx_document = Document(docx_file)
         
-        text = []
-        for paragraph in doc.paragraphs:
-            if paragraph.text.strip():
-                text.append(paragraph.text)
+        paragraph_texts = []
+        for para in docx_document.paragraphs:
+            if para.text.strip():
+                paragraph_texts.append(para.text)
         
-        extracted_text = "\n".join(text)
+        extracted_text = "\n".join(paragraph_texts)
         
         if not extracted_text.strip():
             raise FileProcessingError("No text could be extracted from DOCX")
         
-        app_logger.info(f"Extracted {len(extracted_text)} characters from DOCX")
+        app_logger.info(f"DOCX extraction completed: {len(extracted_text)} chars from {len(paragraph_texts)} paragraphs")
         return extracted_text
         
-    except Exception as e:
-        app_logger.error(f"DOCX extraction failed: {str(e)}")
-        raise FileProcessingError(f"Failed to extract text from DOCX: {str(e)}")
+    except FileProcessingError:
+        raise
+    except Exception as docx_error:
+        app_logger.error(f"DOCX extraction failed: {str(docx_error)}")
+        raise FileProcessingError(f"Failed to extract text from DOCX: {str(docx_error)}")
+
+
+def _clean_html_text(raw_text: str) -> str:
+    """Clean and normalize text extracted from HTML.
+    
+    Removes extra whitespace, collapses multiple spaces, and joins lines cleanly.
+    
+    Args:
+        raw_text: Raw text extracted from HTML
+        
+    Returns:
+        Cleaned and normalized text
+    """
+    lines = (line.strip() for line in raw_text.splitlines())
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    return '\n'.join(chunk for chunk in chunks if chunk)
 
 
 def extract_text_from_url(url: str, timeout: int = None) -> str:
@@ -112,11 +137,14 @@ def extract_text_from_url(url: str, timeout: int = None) -> str:
     if timeout is None:
         timeout = config.URL_FETCH_TIMEOUT
     
+    app_logger.info(f"Starting URL text extraction: url={url}, timeout={timeout}s")
+    
     try:
         # Fetch URL content
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
+        app_logger.debug(f"Fetching URL: {url}")
         response = requests.get(
             url,
             headers=headers,
@@ -124,57 +152,56 @@ def extract_text_from_url(url: str, timeout: int = None) -> str:
             verify=config.VERIFY_SSL_CERTIFICATES
         )
         response.raise_for_status()
+        app_logger.debug(f"URL fetched successfully: status_code={response.status_code}")
         
         # Parse HTML
-        soup = BeautifulSoup(response.content, 'html.parser')
+        html_parser = BeautifulSoup(response.content, 'html.parser')
         
         # Remove script and style elements
-        for script in soup(["script", "style"]):
-            script.decompose()
+        for unwanted_element in html_parser(["script", "style"]):
+            unwanted_element.decompose()
         
         # Get text
-        text = soup.get_text()
+        raw_text = html_parser.get_text()
         
         # Clean up text
-        lines = (line.strip() for line in text.splitlines())
-        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        text = '\n'.join(chunk for chunk in chunks if chunk)
+        cleaned_text = _clean_html_text(raw_text)
         
-        if not text.strip():
+        if not cleaned_text.strip():
             raise URLFetchError("No text could be extracted from URL")
         
-        app_logger.info(f"Extracted {len(text)} characters from URL: {url}")
-        return text
+        app_logger.info(f"URL extraction completed: {len(cleaned_text)} chars extracted from {url}")
+        return cleaned_text
     
-    except SSLError as e:
+    except SSLError as ssl_error:
         # Only raise SSL error if verification is enabled
         if config.VERIFY_SSL_CERTIFICATES:
-            app_logger.error(f"SSL verification failed for URL {url}: {str(e)}")
+            app_logger.error(f"SSL verification failed for URL {url}: {str(ssl_error)}")
             raise SSLVerificationError(
                 f"SSL certificate verification failed for {url}. "
                 "The site may have a self-signed or invalid certificate."
             )
         else:
             # This shouldn't happen since we're bypassing verification
-            app_logger.error(f"SSL error despite disabled verification for {url}: {str(e)}")
+            app_logger.error(f"SSL error despite disabled verification for {url}: {str(ssl_error)}")
             raise URLFetchError(f"Failed to establish connection to {url}")
-    except requests.Timeout:
+    except requests.Timeout as timeout_error:
         app_logger.error(f"Timeout while fetching URL: {url}")
         raise URLFetchError(f"The request timed out. The URL may be slow or unreachable.")
-    except requests.RequestException as e:
-        app_logger.error(f"URL fetch failed: {str(e)}")
-        raise URLFetchError(f"Failed to fetch URL: {str(e)}")
-    except Exception as e:
-        app_logger.error(f"URL text extraction failed: {str(e)}")
-        raise URLFetchError(f"Failed to extract text from URL: {str(e)}")
+    except requests.RequestException as request_error:
+        app_logger.error(f"URL fetch failed: {str(request_error)}")
+        raise URLFetchError(f"Failed to fetch URL: {str(request_error)}")
+    except Exception as unexpected_error:
+        app_logger.error(f"URL text extraction failed: {str(unexpected_error)}")
+        raise URLFetchError(f"Failed to extract text from URL: {str(unexpected_error)}")
 
 
-def extract_text(content: bytes, file_extension: str) -> str:
+def extract_text(file_content: bytes, file_extension: str) -> str:
     """
     Extract text based on file extension.
     
     Args:
-        content: File content as bytes
+        file_content: File content as bytes
         file_extension: File extension (e.g., '.pdf', '.docx', '.txt')
         
     Returns:
@@ -184,19 +211,24 @@ def extract_text(content: bytes, file_extension: str) -> str:
         UnsupportedFormatError: If file format is not supported
         FileProcessingError: If extraction fails
     """
-    file_extension = file_extension.lower()
+    normalized_extension = file_extension.lower()
+    app_logger.info(f"Routing text extraction: extension={normalized_extension}")
     
-    if file_extension == '.pdf':
-        return extract_text_from_pdf(content)
-    elif file_extension == '.docx':
-        return extract_text_from_docx(content)
-    elif file_extension == '.txt':
+    if normalized_extension == '.pdf':
+        return extract_text_from_pdf(file_content)
+    elif normalized_extension == '.docx':
+        return extract_text_from_docx(file_content)
+    elif normalized_extension == '.txt':
         try:
-            return content.decode('utf-8')
-        except UnicodeDecodeError:
+            decoded_text = file_content.decode('utf-8')
+            app_logger.info(f"TXT extraction completed: {len(decoded_text)} chars")
+            return decoded_text
+        except UnicodeDecodeError as decode_error:
+            app_logger.error(f"Failed to decode text file: {str(decode_error)}")
             raise FileProcessingError("Failed to decode text file (invalid UTF-8)")
     else:
-        raise UnsupportedFormatError(f"Unsupported file format: {file_extension}")
+        app_logger.error(f"Unsupported file format: {normalized_extension}")
+        raise UnsupportedFormatError(f"Unsupported file format: {normalized_extension}")
 
 
 def validate_file_size(file_size: int, max_size_mb: int) -> bool:
