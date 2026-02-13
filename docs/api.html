@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - GenAI Summarizer Web App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📚 API Documentation</h1>
+            <p class="subtitle">REST API reference for the GenAI Summarizer</p>
+        </div>
+    </header>
+    
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="setup.html">Setup Guide</a></li>
+                <li><a href="api.html" class="active">API Documentation</a></li>
+                <li><a href="https://github.com/durangogt/genai-summarizer-web-app" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <section>
+            <h2>Overview</h2>
+            <p>The GenAI Summarizer provides a RESTful API for programmatic access to summarization features. All endpoints are accessible at <code>/api</code> and return JSON responses.</p>
+            
+            <h3>Base URL</h3>
+            <div class="code-block">
+                <pre><code>http://127.0.0.1:8000/api</code></pre>
+            </div>
+
+            <h3>Authentication</h3>
+            <p>API endpoints require JWT authentication. Include the token in the Authorization header:</p>
+            <div class="code-block">
+                <pre><code>Authorization: Bearer YOUR_JWT_TOKEN</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Endpoints</h2>
+
+            <h3>1. Summarize Text</h3>
+            <p>Summarize plain text content.</p>
+            
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <td>POST</td>
+                </tr>
+                <tr>
+                    <th>Endpoint</th>
+                    <td><code>/api/summarize/text</code></td>
+                </tr>
+                <tr>
+                    <th>Content-Type</th>
+                    <td>application/json</td>
+                </tr>
+            </table>
+
+            <h4>Request Body:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "text": "Your long text content here...",
+  "length": "medium"  // Options: "short", "medium", "long"
+}</code></pre>
+            </div>
+
+            <h4>Response:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "summary": "Generated summary of the text...",
+  "length": "medium",
+  "original_length": 1500,
+  "summary_length": 250,
+  "timestamp": "2026-02-13T21:30:00Z"
+}</code></pre>
+            </div>
+
+            <h4>Example:</h4>
+            <div class="code-block">
+                <pre><code>curl -X POST "http://127.0.0.1:8000/api/summarize/text" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "text": "The quick brown fox jumps over the lazy dog...",
+    "length": "short"
+  }'</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h3>2. Summarize File</h3>
+            <p>Upload and summarize a file (PDF, DOCX, TXT).</p>
+            
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <td>POST</td>
+                </tr>
+                <tr>
+                    <th>Endpoint</th>
+                    <td><code>/api/summarize/file</code></td>
+                </tr>
+                <tr>
+                    <th>Content-Type</th>
+                    <td>multipart/form-data</td>
+                </tr>
+            </table>
+
+            <h4>Request Parameters:</h4>
+            <ul>
+                <li><code>file</code> (required): File to upload (max 10MB)</li>
+                <li><code>length</code> (optional): Summary length - "short", "medium", or "long" (default: "medium")</li>
+            </ul>
+
+            <h4>Response:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "summary": "Generated summary of the file...",
+  "filename": "document.pdf",
+  "length": "medium",
+  "original_length": 3500,
+  "summary_length": 500,
+  "timestamp": "2026-02-13T21:30:00Z"
+}</code></pre>
+            </div>
+
+            <h4>Example:</h4>
+            <div class="code-block">
+                <pre><code>curl -X POST "http://127.0.0.1:8000/api/summarize/file" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "file=@document.pdf" \
+  -F "length=long"</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h3>3. Summarize URL</h3>
+            <p>Fetch and summarize content from a web URL.</p>
+            
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <td>POST</td>
+                </tr>
+                <tr>
+                    <th>Endpoint</th>
+                    <td><code>/api/summarize/url</code></td>
+                </tr>
+                <tr>
+                    <th>Content-Type</th>
+                    <td>application/json</td>
+                </tr>
+            </table>
+
+            <h4>Request Body:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "url": "https://example.com/article",
+  "length": "medium"
+}</code></pre>
+            </div>
+
+            <h4>Response:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "summary": "Generated summary of the web page...",
+  "url": "https://example.com/article",
+  "title": "Article Title",
+  "length": "medium",
+  "original_length": 2800,
+  "summary_length": 400,
+  "timestamp": "2026-02-13T21:30:00Z"
+}</code></pre>
+            </div>
+
+            <h4>Example:</h4>
+            <div class="code-block">
+                <pre><code>curl -X POST "http://127.0.0.1:8000/api/summarize/url" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "url": "https://example.com/article",
+    "length": "short"
+  }'</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h3>4. Batch Summarize</h3>
+            <p>Process multiple files in a single request (up to 10 files).</p>
+            
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <td>POST</td>
+                </tr>
+                <tr>
+                    <th>Endpoint</th>
+                    <td><code>/api/summarize/batch</code></td>
+                </tr>
+                <tr>
+                    <th>Content-Type</th>
+                    <td>multipart/form-data</td>
+                </tr>
+            </table>
+
+            <h4>Request Parameters:</h4>
+            <ul>
+                <li><code>files</code> (required): Array of files to upload (max 10 files)</li>
+                <li><code>length</code> (optional): Summary length for all files (default: "medium")</li>
+            </ul>
+
+            <h4>Response:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "results": [
+    {
+      "filename": "file1.pdf",
+      "summary": "Summary of file1...",
+      "status": "success"
+    },
+    {
+      "filename": "file2.docx",
+      "summary": "Summary of file2...",
+      "status": "success"
+    }
+  ],
+  "total_files": 2,
+  "successful": 2,
+  "failed": 0,
+  "timestamp": "2026-02-13T21:30:00Z"
+}</code></pre>
+            </div>
+
+            <h4>Example:</h4>
+            <div class="code-block">
+                <pre><code>curl -X POST "http://127.0.0.1:8000/api/summarize/batch" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -F "files=@file1.pdf" \
+  -F "files=@file2.docx" \
+  -F "length=medium"</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h3>5. Get Summary History</h3>
+            <p>Retrieve the history of previous summaries.</p>
+            
+            <table>
+                <tr>
+                    <th>Method</th>
+                    <td>GET</td>
+                </tr>
+                <tr>
+                    <th>Endpoint</th>
+                    <td><code>/api/history</code></td>
+                </tr>
+            </table>
+
+            <h4>Query Parameters:</h4>
+            <ul>
+                <li><code>limit</code> (optional): Number of results to return (default: 50, max: 100)</li>
+                <li><code>offset</code> (optional): Pagination offset (default: 0)</li>
+            </ul>
+
+            <h4>Response:</h4>
+            <div class="code-block">
+                <pre><code>{
+  "history": [
+    {
+      "id": "abc123",
+      "type": "text",
+      "summary": "Summary content...",
+      "length": "medium",
+      "timestamp": "2026-02-13T21:30:00Z"
+    },
+    {
+      "id": "def456",
+      "type": "file",
+      "filename": "document.pdf",
+      "summary": "Summary content...",
+      "length": "long",
+      "timestamp": "2026-02-13T20:15:00Z"
+    }
+  ],
+  "total": 2,
+  "limit": 50,
+  "offset": 0
+}</code></pre>
+            </div>
+
+            <h4>Example:</h4>
+            <div class="code-block">
+                <pre><code>curl -X GET "http://127.0.0.1:8000/api/history?limit=10" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Error Responses</h2>
+            <p>All errors follow a consistent JSON format:</p>
+            
+            <div class="code-block">
+                <pre><code>{
+  "error": "Error type",
+  "message": "Detailed error message",
+  "status_code": 400
+}</code></pre>
+            </div>
+
+            <h3>Common Error Codes:</h3>
+            <table>
+                <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>400</td>
+                    <td>Bad Request - Invalid input or parameters</td>
+                </tr>
+                <tr>
+                    <td>401</td>
+                    <td>Unauthorized - Missing or invalid authentication</td>
+                </tr>
+                <tr>
+                    <td>413</td>
+                    <td>Payload Too Large - File exceeds 10MB limit</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Unprocessable Entity - Invalid file format</td>
+                </tr>
+                <tr>
+                    <td>500</td>
+                    <td>Internal Server Error - Processing failed</td>
+                </tr>
+            </table>
+        </section>
+
+        <section>
+            <h2>Rate Limiting</h2>
+            <p>To ensure fair usage and system stability:</p>
+            <ul>
+                <li>API requests are limited to <strong>100 requests per minute</strong> per user</li>
+                <li>Batch operations count as a single request</li>
+                <li>Rate limit headers are included in all responses:</li>
+            </ul>
+            
+            <div class="code-block">
+                <pre><code>X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1676322000</code></pre>
+            </div>
+        </section>
+
+        <section>
+            <h2>Best Practices</h2>
+            <ul>
+                <li>✅ Always include proper error handling in your client code</li>
+                <li>✅ Use batch endpoints when processing multiple files</li>
+                <li>✅ Cache results when appropriate to reduce API calls</li>
+                <li>✅ Respect rate limits to avoid service disruption</li>
+                <li>✅ Validate file sizes before uploading (10MB max)</li>
+                <li>✅ Use appropriate summary lengths for your use case</li>
+                <li>✅ Monitor response times and adjust request frequency</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Interactive API Explorer</h2>
+            <p>When the application is running, you can access the interactive API documentation:</p>
+            
+            <div class="code-block">
+                <pre><code># Swagger UI
+http://127.0.0.1:8000/docs
+
+# ReDoc
+http://127.0.0.1:8000/redoc</code></pre>
+            </div>
+            
+            <p>These interfaces allow you to:</p>
+            <ul>
+                <li>Test API endpoints directly from your browser</li>
+                <li>View detailed request/response schemas</li>
+                <li>Generate code snippets in various languages</li>
+                <li>Explore authentication flows</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>SDK Examples</h2>
+            
+            <h3>Python Example:</h3>
+            <div class="code-block">
+                <pre><code>import requests
+
+API_BASE = "http://127.0.0.1:8000/api"
+TOKEN = "your_jwt_token"
+
+headers = {
+    "Authorization": f"Bearer {TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# Summarize text
+response = requests.post(
+    f"{API_BASE}/summarize/text",
+    headers=headers,
+    json={
+        "text": "Your long text here...",
+        "length": "medium"
+    }
+)
+
+result = response.json()
+print(result["summary"])</code></pre>
+            </div>
+
+            <h3>JavaScript Example:</h3>
+            <div class="code-block">
+                <pre><code>const API_BASE = 'http://127.0.0.1:8000/api';
+const TOKEN = 'your_jwt_token';
+
+async function summarizeText(text, length = 'medium') {
+  const response = await fetch(`${API_BASE}/summarize/text`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ text, length })
+  });
+  
+  const result = await response.json();
+  return result.summary;
+}</code></pre>
+            </div>
+        </section>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 GenAI Summarizer Web App | <a href="https://github.com/durangogt/genai-summarizer-web-app">GitHub Repository</a></p>
+            <p>Powered by Azure OpenAI | Built with Python & FastAPI</p>
+        </div>
+    </footer>
+</body>
+</html>

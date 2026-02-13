@@ -35,10 +35,23 @@ For detailed setup and deployment instructions, refer to the [CloudLabs Lab Guid
 
 ## Documentation
 
+### 📚 Online Documentation
+
+Visit our comprehensive documentation site: **[https://durangogt.github.io/genai-summarizer-web-app/](https://durangogt.github.io/genai-summarizer-web-app/)**
+
+The documentation includes:
+- Complete setup and installation guide
+- API reference with examples
+- Usage tutorials and best practices
+- Deployment instructions
+
+### 📄 Project Documentation
+
 See the following files for detailed information:
 - [architecture.md](architecture.md) - Application structure and file organization
 - [requirements.md](requirements.md) - Functional and non-functional requirements
 - [feature-request.md](feature-request.md) - Feature specifications and user stories
+- [GITHUB_PAGES_SETUP.md](GITHUB_PAGES_SETUP.md) - GitHub Pages deployment guide
 
 ## License
 
