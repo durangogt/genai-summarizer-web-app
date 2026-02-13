@@ -222,50 +222,95 @@ async def process_batch(
     length: str = Form("medium")
 ):
     """Process batch file upload and generate summaries."""
+    from backend.app.logger import log_audit_event
+    
+    user_id = "ui_user"  # UI sessions don't have authentication, use generic ID
+    filenames = [f.filename for f in files]
+    
     try:
-        app_logger.info(f"Processing batch upload: {len(files)} files")
+        app_logger.info(f"Processing batch upload: {len(files)} files, length={length}")
+        
+        # Log batch start for UI
+        log_audit_event(
+            action="ui_batch_processing",
+            user_id=user_id,
+            status="started",
+            details={
+                "file_count": len(files),
+                "summary_length": length,
+                "filenames": filenames
+            }
+        )
         
         if len(files) > config.MAX_BATCH_FILES:
-            raise ValueError(f"Maximum {config.MAX_BATCH_FILES} files allowed")
+            error_msg = f"Maximum {config.MAX_BATCH_FILES} files allowed"
+            log_audit_event(
+                action="ui_batch_processing",
+                user_id=user_id,
+                status="failed",
+                details={"file_count": len(files)},
+                error=error_msg
+            )
+            raise ValueError(error_msg)
         
-        results = []
-        
+        # Prepare file data for batch processing
+        file_data = []
         for file in files:
-            try:
-                content = await file.read()
-                summary = summarizer_service.summarize_file(content, file.filename, length)
-                
-                results.append({
-                    "filename": file.filename,
-                    "success": True,
-                    "summary": summary,
-                    "error": None
-                })
-                
-            except Exception as e:
-                results.append({
-                    "filename": file.filename,
-                    "success": False,
-                    "summary": None,
-                    "error": str(e)
-                })
-                app_logger.error(f"Batch file {file.filename} failed: {str(e)}")
+            content = await file.read()
+            file_data.append((content, file.filename))
+            app_logger.debug(f"File read: filename={file.filename}, size={len(content)} bytes")
         
-        app_logger.info(f"Batch processing completed: {len(results)} files")
+        # Use service layer batch processing with audit logging
+        results = summarizer_service.summarize_batch(file_data, length, user_id=user_id)
+        
+        successful = sum(1 for r in results if r["success"])
+        failed = sum(1 for r in results if not r["success"])
+        
+        # Log batch completion
+        log_audit_event(
+            action="ui_batch_processing",
+            user_id=user_id,
+            status="success",
+            details={
+                "total_files": len(files),
+                "successful": successful,
+                "failed": failed
+            }
+        )
+        
+        app_logger.info(
+            f"Batch processing completed: {successful}/{len(files)} successful"
+        )
         
         return templates.TemplateResponse("batch_result.html", {
             "request": request,
             "title": "Batch Summary Results",
             "results": results,
             "total": len(results),
-            "successful": sum(1 for r in results if r["success"]),
-            "failed": sum(1 for r in results if not r["success"]),
+            "successful": successful,
+            "failed": failed,
             "length": length,
             "timestamp": datetime.utcnow()
         })
         
     except Exception as e:
-        app_logger.error(f"Batch processing failed: {str(e)}")
+        error_msg = str(e)
+        friendly_msg = get_user_friendly_message(e)
+        
+        # Log batch failure
+        log_audit_event(
+            action="ui_batch_processing",
+            user_id=user_id,
+            status="failed",
+            details={
+                "file_count": len(files),
+                "filenames": filenames
+            },
+            error=f"{error_msg} | User-friendly: {friendly_msg}"
+        )
+        
+        app_logger.error(f"Batch processing failed: {error_msg}")
+        
         return templates.TemplateResponse("batch_result.html", {
             "request": request,
             "title": "Batch Summary Results",
@@ -273,6 +318,6 @@ async def process_batch(
             "total": 0,
             "successful": 0,
             "failed": 0,
-            "error": get_user_friendly_message(e),
+            "error": friendly_msg,
             "timestamp": datetime.utcnow()
         })

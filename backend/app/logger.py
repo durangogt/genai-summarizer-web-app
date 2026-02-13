@@ -33,3 +33,46 @@ def setup_logger():
 
 # Initialize logger when module is imported
 app_logger = setup_logger()
+
+
+def log_audit_event(
+    action: str,
+    user_id: str,
+    status: str,
+    details: dict = None,
+    error: str = None
+):
+    """
+    Log an audit event with structured information.
+    
+    Args:
+        action: The action being performed (e.g., 'batch_summarization', 'file_upload')
+        user_id: Username or user identifier
+        status: Status of the action ('started', 'success', 'failed')
+        details: Additional details as a dictionary
+        error: Error message if status is 'failed'
+    """
+    from datetime import datetime
+    
+    audit_data = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "user_id": user_id,
+        "action": action,
+        "status": status
+    }
+    
+    if details:
+        audit_data.update(details)
+    
+    if error:
+        audit_data["error"] = error
+    
+    # Format as structured log entry
+    log_message = f"AUDIT | {' | '.join(f'{k}={v}' for k, v in audit_data.items())}"
+    
+    if status == "failed":
+        app_logger.error(log_message)
+    elif status == "success":
+        app_logger.info(log_message)
+    else:
+        app_logger.debug(log_message)
